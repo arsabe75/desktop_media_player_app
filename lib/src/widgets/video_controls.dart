@@ -1,0 +1,192 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:window_manager/window_manager.dart';
+
+class VideoControls extends StatefulWidget {
+  final Player player;
+
+  const VideoControls({super.key, required this.player});
+
+  @override
+  State<VideoControls> createState() => _VideoControlsState();
+}
+
+class _VideoControlsState extends State<VideoControls> {
+  bool _visible = true;
+  Timer? _hideTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startHideTimer();
+  }
+
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _visible = false;
+        });
+      }
+    });
+  }
+
+  void _onHover() {
+    if (!_visible) {
+      setState(() {
+        _visible = true;
+      });
+    }
+    _startHideTimer();
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onHover: (_) => _onHover(),
+      child: Stack(
+        children: [
+          // Invisible container to catch hover events across the entire screen
+          Container(color: Colors.transparent),
+
+          // Controls Overlay
+          AnimatedOpacity(
+            opacity: _visible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                color: Colors.black54,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Progress Bar
+                    StreamBuilder<Duration>(
+                      stream: widget.player.stream.position,
+                      builder: (context, snapshot) {
+                        final position = snapshot.data ?? Duration.zero;
+                        final duration = widget.player.state.duration;
+                        return Row(
+                          children: [
+                            Text(
+                              _formatDuration(position),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: position.inSeconds.toDouble().clamp(
+                                  0,
+                                  duration.inSeconds.toDouble(),
+                                ),
+                                min: 0,
+                                max: duration.inSeconds.toDouble(),
+                                onChanged: (value) {
+                                  widget.player.seek(
+                                    Duration(seconds: value.toInt()),
+                                  );
+                                  _startHideTimer();
+                                },
+                              ),
+                            ),
+                            Text(
+                              _formatDuration(duration),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Play/Pause
+                        StreamBuilder<bool>(
+                          stream: widget.player.stream.playing,
+                          builder: (context, snapshot) {
+                            final playing = snapshot.data ?? false;
+                            return IconButton(
+                              icon: Icon(
+                                playing ? Icons.pause : Icons.play_arrow,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                              onPressed: () {
+                                widget.player.playOrPause();
+                                _startHideTimer();
+                              },
+                            );
+                          },
+                        ),
+                        // Volume
+                        Row(
+                          children: [
+                            const Icon(Icons.volume_up, color: Colors.white),
+                            SizedBox(
+                              width: 100,
+                              child: StreamBuilder<double>(
+                                stream: widget.player.stream.volume,
+                                builder: (context, snapshot) {
+                                  final volume = snapshot.data ?? 100.0;
+                                  return Slider(
+                                    value: volume,
+                                    min: 0,
+                                    max: 100,
+                                    onChanged: (value) {
+                                      widget.player.setVolume(value);
+                                      _startHideTimer();
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Fullscreen
+                        IconButton(
+                          icon: const Icon(
+                            Icons.fullscreen,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                          onPressed: () async {
+                            bool isFullScreen = await windowManager
+                                .isFullScreen();
+                            if (isFullScreen) {
+                              windowManager.setFullScreen(false);
+                            } else {
+                              windowManager.setFullScreen(true);
+                            }
+                            _startHideTimer();
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
