@@ -58,6 +58,7 @@ class _VideoControlsState extends State<VideoControls> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
+      cursor: _visible ? SystemMouseCursors.basic : SystemMouseCursors.none,
       onHover: (_) => _onHover(),
       child: Stack(
         children: [

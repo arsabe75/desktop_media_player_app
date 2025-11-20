@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:desktop_media_player_app/src/models/video_source.dart';
+import 'package:path/path.dart' as p;
 import 'package:desktop_media_player_app/src/widgets/video_controls.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -52,7 +53,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Player'),
+        title: Text(p.basename(widget.videoSource.pathOrUrl)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
