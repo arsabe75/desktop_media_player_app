@@ -52,13 +52,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(p.basename(widget.videoSource.pathOrUrl)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
-      ),
+      appBar: null,
       extendBodyBehindAppBar: true,
       body: _errorMessage != null
           ? Center(
@@ -83,7 +77,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     controls: NoVideoControls,
                   ),
                 ),
-                VideoControls(player: player),
+                VideoControls(
+                  player: player,
+                  title: p.basename(widget.videoSource.pathOrUrl),
+                ),
               ],
             ),
     );

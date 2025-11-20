@@ -5,8 +5,9 @@ import 'package:window_manager/window_manager.dart';
 
 class VideoControls extends StatefulWidget {
   final Player player;
+  final String title;
 
-  const VideoControls({super.key, required this.player});
+  const VideoControls({super.key, required this.player, required this.title});
 
   @override
   State<VideoControls> createState() => _VideoControlsState();
@@ -78,6 +79,38 @@ class _VideoControlsState extends State<VideoControls> {
               _startHideTimer();
             },
             child: Container(color: Colors.transparent),
+          ),
+
+          // Top Bar (Back button + Title)
+          AnimatedOpacity(
+            opacity: _visible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+                color: Colors.black54,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    const BackButton(color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
 
           // Controls Overlay
