@@ -62,7 +62,22 @@ class _VideoControlsState extends State<VideoControls> {
       child: Stack(
         children: [
           // Invisible container to catch hover events across the entire screen
-          Container(color: Colors.transparent),
+          GestureDetector(
+            onTap: () {
+              widget.player.playOrPause();
+              _startHideTimer();
+            },
+            onDoubleTap: () async {
+              bool isFullScreen = await windowManager.isFullScreen();
+              if (isFullScreen) {
+                windowManager.setFullScreen(false);
+              } else {
+                windowManager.setFullScreen(true);
+              }
+              _startHideTimer();
+            },
+            child: Container(color: Colors.transparent),
+          ),
 
           // Controls Overlay
           AnimatedOpacity(
