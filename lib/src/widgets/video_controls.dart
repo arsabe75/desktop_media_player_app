@@ -172,7 +172,8 @@ class _VideoControlsState extends State<VideoControls> {
                         StreamBuilder<bool>(
                           stream: widget.player.stream.playing,
                           builder: (context, snapshot) {
-                            final playing = snapshot.data ?? false;
+                            final playing =
+                                snapshot.data ?? widget.player.state.playing;
                             return IconButton(
                               icon: Icon(
                                 playing ? Icons.pause : Icons.play_arrow,
