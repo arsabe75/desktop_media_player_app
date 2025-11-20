@@ -3,6 +3,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:desktop_media_player_app/src/models/video_source.dart';
 import 'package:desktop_media_player_app/src/widgets/video_controls.dart';
+import 'package:window_manager/window_manager.dart';
 
 class PlayerScreen extends StatefulWidget {
   final VideoSource videoSource;
@@ -41,6 +42,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    windowManager.setFullScreen(false);
     player.dispose();
     super.dispose();
   }
