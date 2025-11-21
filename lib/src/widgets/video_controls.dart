@@ -10,10 +10,11 @@ class VideoControls extends StatefulWidget {
   const VideoControls({super.key, required this.player, required this.title});
 
   @override
-  State<VideoControls> createState() => _VideoControlsState();
+  @override
+  State<VideoControls> createState() => VideoControlsState();
 }
 
-class _VideoControlsState extends State<VideoControls> {
+class VideoControlsState extends State<VideoControls> {
   bool _visible = true;
   Timer? _hideTimer;
 
@@ -34,13 +35,17 @@ class _VideoControlsState extends State<VideoControls> {
     });
   }
 
-  void _onHover() {
+  void flashControls() {
     if (!_visible) {
       setState(() {
         _visible = true;
       });
     }
     _startHideTimer();
+  }
+
+  void _onHover() {
+    flashControls();
   }
 
   @override

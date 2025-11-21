@@ -23,6 +23,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   late final VideoController controller;
   final _playbackService = PlaybackService();
+  final GlobalKey<VideoControlsState> _videoControlsKey =
+      GlobalKey<VideoControlsState>();
   String? _errorMessage;
 
   @override
@@ -72,16 +74,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.space): () {
           player.playOrPause();
+          _videoControlsKey.currentState?.flashControls();
         },
         const SingleActivator(LogicalKeyboardKey.keyF): () async {
           final isFullScreen = await windowManager.isFullScreen();
           windowManager.setFullScreen(!isFullScreen);
+          _videoControlsKey.currentState?.flashControls();
         },
         const SingleActivator(LogicalKeyboardKey.arrowRight): () {
           player.seek(player.state.position + const Duration(seconds: 10));
+          _videoControlsKey.currentState?.flashControls();
         },
         const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
           player.seek(player.state.position - const Duration(seconds: 10));
+          _videoControlsKey.currentState?.flashControls();
         },
       },
       child: Focus(
@@ -118,6 +124,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ),
                     ),
                     VideoControls(
+                      key: _videoControlsKey,
                       player: player,
                       title: p.basename(widget.videoSource.pathOrUrl),
                     ),
