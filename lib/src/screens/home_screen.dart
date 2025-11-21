@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:desktop_media_player_app/src/models/video_source.dart';
 import 'package:desktop_media_player_app/src/screens/player_screen.dart';
+import 'package:desktop_media_player_app/src/controllers/theme_controller.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final ThemeController? themeController;
+
+  const HomeScreen({super.key, this.themeController});
 
   Future<void> _openLocalFile(BuildContext context) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -75,6 +78,19 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Desktop Video Player'),
         centerTitle: true,
+        actions: [
+          if (themeController != null)
+            IconButton(
+              icon: Icon(
+                themeController!.themeMode == ThemeMode.dark
+                    ? Icons.light_mode
+                    : Icons.dark_mode,
+              ),
+              onPressed: () {
+                themeController!.toggleTheme();
+              },
+            ),
+        ],
       ),
       body: Center(
         child: Row(

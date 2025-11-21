@@ -9,11 +9,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:desktop_media_player_app/main.dart';
+import 'package:desktop_media_player_app/src/controllers/theme_controller.dart';
+import 'package:desktop_media_player_app/src/services/theme_service.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(
+      MyApp(themeController: ThemeController(ThemeService())),
+    );
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
