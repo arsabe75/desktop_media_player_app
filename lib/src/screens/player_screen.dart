@@ -4,7 +4,9 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:desktop_media_player_app/src/models/video_source.dart';
 import 'package:path/path.dart' as p;
 import 'package:desktop_media_player_app/src/widgets/video_controls.dart';
+
 import 'package:window_manager/window_manager.dart';
+import 'package:desktop_media_player_app/src/services/playback_service.dart';
 
 class PlayerScreen extends StatefulWidget {
   final VideoSource videoSource;
@@ -17,7 +19,9 @@ class PlayerScreen extends StatefulWidget {
 
 class _PlayerScreenState extends State<PlayerScreen> {
   late final Player player;
+
   late final VideoController controller;
+  final _playbackService = PlaybackService();
   String? _errorMessage;
 
   @override
@@ -26,7 +30,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
     player = Player();
     controller = VideoController(player);
 
-    player.open(Media(widget.videoSource.pathOrUrl));
+    _initPlayer();
+  }
+
+  Future<void> _initPlayer() async {
+    await player.open(Media(widget.videoSource.pathOrUrl), play: false);
+
+    // Wait for duration to be available
+    await player.stream.duration.firstWhere(
+      (duration) => duration != Duration.zero,
+    );
+
+    await _loadSavedPosition();
+    await player.play();
 
     // Error handling
     player.stream.error.listen((error) {
@@ -43,6 +59,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _savePosition();
     windowManager.setFullScreen(false);
     player.dispose();
     super.dispose();
@@ -83,6 +100,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  Future<void> _loadSavedPosition() async {
+    final position = await _playbackService.getPosition(
+      widget.videoSource.pathOrUrl,
+    );
+    if (position != Duration.zero) {
+      await player.seek(position);
+    }
+  }
+
+  Future<void> _savePosition() async {
+    await _playbackService.savePosition(
+      widget.videoSource.pathOrUrl,
+      player.state.position,
     );
   }
 }
