@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:desktop_media_player_app/src/models/video_source.dart';
@@ -67,39 +68,63 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: null,
-      extendBodyBehindAppBar: true,
-      body: _errorMessage != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading video:\n$_errorMessage',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.space): () {
+          player.playOrPause();
+        },
+        const SingleActivator(LogicalKeyboardKey.keyF): () async {
+          final isFullScreen = await windowManager.isFullScreen();
+          windowManager.setFullScreen(!isFullScreen);
+        },
+        const SingleActivator(LogicalKeyboardKey.arrowRight): () {
+          player.seek(player.state.position + const Duration(seconds: 10));
+        },
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
+          player.seek(player.state.position - const Duration(seconds: 10));
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: null,
+          extendBodyBehindAppBar: true,
+          body: _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 64,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading video:\n$_errorMessage',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )
-          : Stack(
-              children: [
-                Center(
-                  child: Video(
-                    controller: controller,
-                    controls: NoVideoControls,
-                  ),
+                )
+              : Stack(
+                  children: [
+                    Center(
+                      child: Video(
+                        controller: controller,
+                        controls: NoVideoControls,
+                      ),
+                    ),
+                    VideoControls(
+                      player: player,
+                      title: p.basename(widget.videoSource.pathOrUrl),
+                    ),
+                  ],
                 ),
-                VideoControls(
-                  player: player,
-                  title: p.basename(widget.videoSource.pathOrUrl),
-                ),
-              ],
-            ),
+        ),
+      ),
     );
   }
 
