@@ -31,7 +31,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void initState() {
     super.initState();
     player = Player();
-    controller = VideoController(player);
+    controller = VideoController(
+      player,
+      configuration: const VideoControllerConfiguration(
+        enableHardwareAcceleration: false,
+      ),
+    );
 
     _initPlayer();
   }
