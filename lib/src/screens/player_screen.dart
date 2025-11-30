@@ -34,7 +34,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     controller = VideoController(
       player,
       configuration: const VideoControllerConfiguration(
-        enableHardwareAcceleration: false,
+        enableHardwareAcceleration: true,
       ),
     );
 
