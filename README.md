@@ -63,4 +63,4 @@ or
 - Tecla F (F): Alterna entre Pantalla Completa y modo ventana.
 
 ### Controles de Volumen
-- Tecla M (M): Alterna entre Mute y Volumen.
+- Tecla M (M): Alterna entre Mute y Unmute.
