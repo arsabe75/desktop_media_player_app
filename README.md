@@ -2,6 +2,8 @@
 
 ## Overview
 - This application is a desktop video player for Linux and Windows, built with Flutter and media_kit. It supports playing local video files and network URLs. (Tested on Kubuntu 24.04 and Windows 11)
+- The application is currently in development and may have some bugs or limitations.
+- Using an alternative media_kit branch: https://github.com/Predidit/media-kit
 
 ## Verification Steps
 
