@@ -100,169 +100,175 @@ class VideoControlsState extends State<VideoControls> {
           ),
 
           // Top Bar (Back button + Title)
-          AnimatedOpacity(
-            opacity: _visible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 300),
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Container(
-                color: Colors.black54,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: [
-                    const BackButton(color: Colors.white),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        widget.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
+          IgnorePointer(
+            ignoring: !_visible,
+            child: AnimatedOpacity(
+              opacity: _visible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  color: Colors.black54,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      const BackButton(color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
 
           // Controls Overlay
-          AnimatedOpacity(
-            opacity: _visible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 300),
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                color: Colors.black54,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Progress Bar
-                    StreamBuilder<Duration>(
-                      stream: widget.player.stream.position,
-                      builder: (context, snapshot) {
-                        final position = snapshot.data ?? Duration.zero;
-                        final duration = widget.player.state.duration;
-                        return Row(
-                          children: [
-                            Text(
-                              _formatDuration(position),
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            Expanded(
-                              child: Slider(
-                                value: position.inSeconds.toDouble().clamp(
-                                  0,
-                                  duration.inSeconds.toDouble(),
+          IgnorePointer(
+            ignoring: !_visible,
+            child: AnimatedOpacity(
+              opacity: _visible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  color: Colors.black54,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Progress Bar
+                      StreamBuilder<Duration>(
+                        stream: widget.player.stream.position,
+                        builder: (context, snapshot) {
+                          final position = snapshot.data ?? Duration.zero;
+                          final duration = widget.player.state.duration;
+                          return Row(
+                            children: [
+                              Text(
+                                _formatDuration(position),
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              Expanded(
+                                child: Slider(
+                                  value: position.inSeconds.toDouble().clamp(
+                                    0,
+                                    duration.inSeconds.toDouble(),
+                                  ),
+                                  min: 0,
+                                  max: duration.inSeconds.toDouble(),
+                                  onChanged: (value) {
+                                    widget.player.seek(
+                                      Duration(seconds: value.toInt()),
+                                    );
+                                    _startHideTimer();
+                                  },
                                 ),
-                                min: 0,
-                                max: duration.inSeconds.toDouble(),
-                                onChanged: (value) {
-                                  widget.player.seek(
-                                    Duration(seconds: value.toInt()),
-                                  );
+                              ),
+                              Text(
+                                _formatDuration(duration),
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Play/Pause
+                          StreamBuilder<bool>(
+                            stream: widget.player.stream.playing,
+                            builder: (context, snapshot) {
+                              final playing =
+                                  snapshot.data ?? widget.player.state.playing;
+                              return IconButton(
+                                icon: Icon(
+                                  playing ? Icons.pause : Icons.play_arrow,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                                onPressed: () {
+                                  widget.player.playOrPause();
                                   _startHideTimer();
                                 },
-                              ),
-                            ),
-                            Text(
-                              _formatDuration(duration),
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Play/Pause
-                        StreamBuilder<bool>(
-                          stream: widget.player.stream.playing,
-                          builder: (context, snapshot) {
-                            final playing =
-                                snapshot.data ?? widget.player.state.playing;
-                            return IconButton(
-                              icon: Icon(
-                                playing ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                              onPressed: () {
-                                widget.player.playOrPause();
-                                _startHideTimer();
-                              },
-                            );
-                          },
-                        ),
-                        // Volume
-                        Row(
-                          children: [
-                            StreamBuilder<double>(
-                              stream: widget.player.stream.volume,
-                              builder: (context, snapshot) {
-                                final volume = snapshot.data ?? 100.0;
-                                return IconButton(
-                                  icon: Icon(
-                                    volume == 0
-                                        ? Icons.volume_off
-                                        : Icons.volume_up,
-                                    color: Colors.white,
-                                  ),
-                                  onPressed: toggleMute,
-                                );
-                              },
-                            ),
-                            SizedBox(
-                              width: 100,
-                              child: StreamBuilder<double>(
+                              );
+                            },
+                          ),
+                          // Volume
+                          Row(
+                            children: [
+                              StreamBuilder<double>(
                                 stream: widget.player.stream.volume,
                                 builder: (context, snapshot) {
                                   final volume = snapshot.data ?? 100.0;
-                                  return Slider(
-                                    value: volume,
-                                    min: 0,
-                                    max: 100,
-                                    onChanged: (value) {
-                                      widget.player.setVolume(value);
-                                      _startHideTimer();
-                                    },
+                                  return IconButton(
+                                    icon: Icon(
+                                      volume == 0
+                                          ? Icons.volume_off
+                                          : Icons.volume_up,
+                                      color: Colors.white,
+                                    ),
+                                    onPressed: toggleMute,
                                   );
                                 },
                               ),
-                            ),
-                          ],
-                        ),
-                        // Fullscreen
-                        IconButton(
-                          icon: const Icon(
-                            Icons.fullscreen,
-                            color: Colors.white,
-                            size: 32,
+                              SizedBox(
+                                width: 100,
+                                child: StreamBuilder<double>(
+                                  stream: widget.player.stream.volume,
+                                  builder: (context, snapshot) {
+                                    final volume = snapshot.data ?? 100.0;
+                                    return Slider(
+                                      value: volume,
+                                      min: 0,
+                                      max: 100,
+                                      onChanged: (value) {
+                                        widget.player.setVolume(value);
+                                        _startHideTimer();
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                          onPressed: () async {
-                            bool isFullScreen = await windowManager
-                                .isFullScreen();
-                            if (isFullScreen) {
-                              windowManager.setFullScreen(false);
-                            } else {
-                              windowManager.setFullScreen(true);
-                            }
-                            _startHideTimer();
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
+                          // Fullscreen
+                          IconButton(
+                            icon: const Icon(
+                              Icons.fullscreen,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                            onPressed: () async {
+                              bool isFullScreen = await windowManager
+                                  .isFullScreen();
+                              if (isFullScreen) {
+                                windowManager.setFullScreen(false);
+                              } else {
+                                windowManager.setFullScreen(true);
+                              }
+                              _startHideTimer();
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
