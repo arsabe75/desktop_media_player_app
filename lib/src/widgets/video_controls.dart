@@ -17,6 +17,7 @@ class VideoControls extends StatefulWidget {
 class VideoControlsState extends State<VideoControls> {
   bool _visible = true;
   Timer? _hideTimer;
+  double _lastVolume = 100.0;
 
   @override
   void initState() {
@@ -42,6 +43,17 @@ class VideoControlsState extends State<VideoControls> {
       });
     }
     _startHideTimer();
+  }
+
+  void toggleMute() {
+    final currentVolume = widget.player.state.volume;
+    if (currentVolume > 0) {
+      _lastVolume = currentVolume;
+      widget.player.setVolume(0);
+    } else {
+      widget.player.setVolume(_lastVolume > 0 ? _lastVolume : 100.0);
+    }
+    flashControls();
   }
 
   void _onHover() {
@@ -195,7 +207,21 @@ class VideoControlsState extends State<VideoControls> {
                         // Volume
                         Row(
                           children: [
-                            const Icon(Icons.volume_up, color: Colors.white),
+                            StreamBuilder<double>(
+                              stream: widget.player.stream.volume,
+                              builder: (context, snapshot) {
+                                final volume = snapshot.data ?? 100.0;
+                                return IconButton(
+                                  icon: Icon(
+                                    volume == 0
+                                        ? Icons.volume_off
+                                        : Icons.volume_up,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: toggleMute,
+                                );
+                              },
+                            ),
                             SizedBox(
                               width: 100,
                               child: StreamBuilder<double>(

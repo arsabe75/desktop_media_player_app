@@ -94,6 +94,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
           player.seek(player.state.position - const Duration(seconds: 10));
           _videoControlsKey.currentState?.flashControls();
         },
+        const SingleActivator(LogicalKeyboardKey.keyM): () {
+          _videoControlsKey.currentState?.toggleMute();
+        },
       },
       child: Focus(
         autofocus: true,
