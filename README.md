@@ -10,8 +10,12 @@
 #### sudo apt-get install libmpv-dev mpv
 - On Windows, the necessary DLLs are handled automatically.
 
-### Running the App
-Run the application using Flutter:
+## Running the App
+
+### First run:
+flutter pub get
+
+## Run the application using Flutter:
 #### flutter run -d linux
 or
 #### flutter run -d windows
