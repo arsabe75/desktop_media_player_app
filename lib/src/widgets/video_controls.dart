@@ -157,33 +157,37 @@ class VideoControlsState extends State<VideoControls> {
                         builder: (context, snapshot) {
                           final position = snapshot.data ?? Duration.zero;
                           final duration = widget.player.state.duration;
-                          return Row(
-                            children: [
-                              Text(
-                                _formatDuration(position),
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              Expanded(
-                                child: Slider(
-                                  value: position.inSeconds.toDouble().clamp(
-                                    0,
-                                    duration.inSeconds.toDouble(),
-                                  ),
-                                  min: 0,
-                                  max: duration.inSeconds.toDouble(),
-                                  onChanged: (value) {
-                                    widget.player.seek(
-                                      Duration(seconds: value.toInt()),
-                                    );
-                                    _startHideTimer();
-                                  },
+                          return RepaintBoundary(
+                            child: Row(
+                              children: [
+                                Text(
+                                  _formatDuration(position),
+                                  style: const TextStyle(color: Colors.white),
                                 ),
-                              ),
-                              Text(
-                                _formatDuration(duration),
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ],
+                                Expanded(
+                                  child: Slider(
+                                    value: position.inMilliseconds
+                                        .toDouble()
+                                        .clamp(
+                                          0,
+                                          duration.inMilliseconds.toDouble(),
+                                        ),
+                                    min: 0,
+                                    max: duration.inMilliseconds.toDouble(),
+                                    onChanged: (value) {
+                                      widget.player.seek(
+                                        Duration(milliseconds: value.toInt()),
+                                      );
+                                      _startHideTimer();
+                                    },
+                                  ),
+                                ),
+                                Text(
+                                  _formatDuration(duration),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),
