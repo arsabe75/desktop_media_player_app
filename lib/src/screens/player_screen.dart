@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
+import 'dart:io';
+import 'package:video_player/video_player.dart';
 import 'package:desktop_media_player_app/src/models/video_source.dart';
 import 'package:path/path.dart' as p;
 import 'package:desktop_media_player_app/src/widgets/video_controls.dart';
@@ -19,9 +19,7 @@ class PlayerScreen extends StatefulWidget {
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  late final Player player;
-
-  late final VideoController controller;
+  VideoPlayerController? _controller;
   final _playbackService = PlaybackService();
   final GlobalKey<VideoControlsState> _videoControlsKey =
       GlobalKey<VideoControlsState>();
@@ -30,30 +28,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void initState() {
     super.initState();
-    player = Player();
-    controller = VideoController(
-      player,
-      configuration: const VideoControllerConfiguration(
-        enableHardwareAcceleration: true,
-      ),
-    );
-
     _initPlayer();
   }
 
   Future<void> _initPlayer() async {
-    await player.open(Media(widget.videoSource.pathOrUrl), play: false);
-
-    // Wait for duration to be available
-    await player.stream.duration.firstWhere(
-      (duration) => duration != Duration.zero,
-    );
-
-    await _loadSavedPosition();
-    await player.play();
-
-    // Error handling
-    player.stream.error.listen((error) {
+    try {
+      _controller = VideoPlayerController.file(
+        File(widget.videoSource.pathOrUrl),
+      );
+      await _controller!.initialize();
+      await _loadSavedPosition();
+      await _controller!.play();
+      setState(() {});
+    } catch (error) {
       if (mounted) {
         setState(() {
           _errorMessage = error.toString();
@@ -62,14 +49,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $error')));
       }
-    });
+    }
   }
 
   @override
   void dispose() {
     _savePosition();
     windowManager.setFullScreen(false);
-    player.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -78,7 +65,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.space): () {
-          player.playOrPause();
+          if (_controller != null) {
+            _controller!.value.isPlaying
+                ? _controller!.pause()
+                : _controller!.play();
+          }
           _videoControlsKey.currentState?.flashControls();
         },
         const SingleActivator(LogicalKeyboardKey.keyF): () async {
@@ -87,11 +78,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
           _videoControlsKey.currentState?.flashControls();
         },
         const SingleActivator(LogicalKeyboardKey.arrowRight): () {
-          player.seek(player.state.position + const Duration(seconds: 10));
+          if (_controller != null) {
+            _controller!.seekTo(
+              _controller!.value.position + const Duration(seconds: 10),
+            );
+          }
           _videoControlsKey.currentState?.flashControls();
         },
         const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
-          player.seek(player.state.position - const Duration(seconds: 10));
+          if (_controller != null) {
+            _controller!.seekTo(
+              _controller!.value.position - const Duration(seconds: 10),
+            );
+          }
           _videoControlsKey.currentState?.flashControls();
         },
         const SingleActivator(LogicalKeyboardKey.keyM): () {
@@ -126,16 +125,21 @@ class _PlayerScreenState extends State<PlayerScreen> {
               : Stack(
                   children: [
                     Center(
-                      child: Video(
-                        controller: controller,
-                        controls: NoVideoControls,
+                      child:
+                          _controller != null &&
+                              _controller!.value.isInitialized
+                          ? AspectRatio(
+                              aspectRatio: _controller!.value.aspectRatio,
+                              child: VideoPlayer(_controller!),
+                            )
+                          : const CircularProgressIndicator(),
+                    ),
+                    if (_controller != null && _controller!.value.isInitialized)
+                      VideoControls(
+                        key: _videoControlsKey,
+                        controller: _controller!,
+                        title: p.basename(widget.videoSource.pathOrUrl),
                       ),
-                    ),
-                    VideoControls(
-                      key: _videoControlsKey,
-                      player: player,
-                      title: p.basename(widget.videoSource.pathOrUrl),
-                    ),
                   ],
                 ),
         ),
@@ -148,14 +152,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
       widget.videoSource.pathOrUrl,
     );
     if (position != Duration.zero) {
-      await player.seek(position);
+      await _controller!.seekTo(position);
     }
   }
 
   Future<void> _savePosition() async {
     await _playbackService.savePosition(
       widget.videoSource.pathOrUrl,
-      player.state.position,
+      _controller?.value.position ?? Duration.zero,
     );
   }
 }

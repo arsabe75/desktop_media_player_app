@@ -1,13 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
+import 'package:video_player/video_player.dart';
 import 'package:window_manager/window_manager.dart';
 
 class VideoControls extends StatefulWidget {
-  final Player player;
+  final VideoPlayerController controller;
   final String title;
 
-  const VideoControls({super.key, required this.player, required this.title});
+  const VideoControls({
+    super.key,
+    required this.controller,
+    required this.title,
+  });
 
   @override
   @override
@@ -17,11 +21,16 @@ class VideoControls extends StatefulWidget {
 class VideoControlsState extends State<VideoControls> {
   bool _visible = true;
   Timer? _hideTimer;
-  double _lastVolume = 100.0;
+  double _lastVolume = 1.0;
+  late VoidCallback _listener;
 
   @override
   void initState() {
     super.initState();
+    _listener = () {
+      if (mounted) setState(() {});
+    };
+    widget.controller.addListener(_listener);
     _startHideTimer();
   }
 
@@ -46,12 +55,12 @@ class VideoControlsState extends State<VideoControls> {
   }
 
   void toggleMute() {
-    final currentVolume = widget.player.state.volume;
+    final currentVolume = widget.controller.value.volume;
     if (currentVolume > 0) {
       _lastVolume = currentVolume;
-      widget.player.setVolume(0);
+      widget.controller.setVolume(0);
     } else {
-      widget.player.setVolume(_lastVolume > 0 ? _lastVolume : 100.0);
+      widget.controller.setVolume(_lastVolume > 0 ? _lastVolume : 1.0);
     }
     flashControls();
   }
@@ -62,6 +71,7 @@ class VideoControlsState extends State<VideoControls> {
 
   @override
   void dispose() {
+    widget.controller.removeListener(_listener);
     _hideTimer?.cancel();
     super.dispose();
   }
@@ -84,7 +94,9 @@ class VideoControlsState extends State<VideoControls> {
           // Invisible container to catch hover events across the entire screen
           GestureDetector(
             onTap: () {
-              widget.player.playOrPause();
+              widget.controller.value.isPlaying
+                  ? widget.controller.pause()
+                  : widget.controller.play();
               _startHideTimer();
             },
             onDoubleTap: () async {
@@ -152,11 +164,10 @@ class VideoControlsState extends State<VideoControls> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Progress Bar
-                      StreamBuilder<Duration>(
-                        stream: widget.player.stream.position,
-                        builder: (context, snapshot) {
-                          final position = snapshot.data ?? Duration.zero;
-                          final duration = widget.player.state.duration;
+                      Builder(
+                        builder: (context) {
+                          final position = widget.controller.value.position;
+                          final duration = widget.controller.value.duration;
                           return Row(
                             children: [
                               Text(
@@ -172,7 +183,7 @@ class VideoControlsState extends State<VideoControls> {
                                   min: 0,
                                   max: duration.inSeconds.toDouble(),
                                   onChanged: (value) {
-                                    widget.player.seek(
+                                    widget.controller.seekTo(
                                       Duration(seconds: value.toInt()),
                                     );
                                     _startHideTimer();
@@ -191,57 +202,42 @@ class VideoControlsState extends State<VideoControls> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // Play/Pause
-                          StreamBuilder<bool>(
-                            stream: widget.player.stream.playing,
-                            builder: (context, snapshot) {
-                              final playing =
-                                  snapshot.data ?? widget.player.state.playing;
-                              return IconButton(
-                                icon: Icon(
-                                  playing ? Icons.pause : Icons.play_arrow,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                                onPressed: () {
-                                  widget.player.playOrPause();
-                                  _startHideTimer();
-                                },
-                              );
+                          IconButton(
+                            icon: Icon(
+                              widget.controller.value.isPlaying
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                            onPressed: () {
+                              widget.controller.value.isPlaying
+                                  ? widget.controller.pause()
+                                  : widget.controller.play();
+                              _startHideTimer();
                             },
                           ),
                           // Volume
                           Row(
                             children: [
-                              StreamBuilder<double>(
-                                stream: widget.player.stream.volume,
-                                builder: (context, snapshot) {
-                                  final volume = snapshot.data ?? 100.0;
-                                  return IconButton(
-                                    icon: Icon(
-                                      volume == 0
-                                          ? Icons.volume_off
-                                          : Icons.volume_up,
-                                      color: Colors.white,
-                                    ),
-                                    onPressed: toggleMute,
-                                  );
-                                },
+                              IconButton(
+                                icon: Icon(
+                                  widget.controller.value.volume == 0
+                                      ? Icons.volume_off
+                                      : Icons.volume_up,
+                                  color: Colors.white,
+                                ),
+                                onPressed: toggleMute,
                               ),
                               SizedBox(
                                 width: 100,
-                                child: StreamBuilder<double>(
-                                  stream: widget.player.stream.volume,
-                                  builder: (context, snapshot) {
-                                    final volume = snapshot.data ?? 100.0;
-                                    return Slider(
-                                      value: volume,
-                                      min: 0,
-                                      max: 100,
-                                      onChanged: (value) {
-                                        widget.player.setVolume(value);
-                                        _startHideTimer();
-                                      },
-                                    );
+                                child: Slider(
+                                  value: widget.controller.value.volume,
+                                  min: 0,
+                                  max: 1.0,
+                                  onChanged: (value) {
+                                    widget.controller.setVolume(value);
+                                    _startHideTimer();
                                   },
                                 ),
                               ),

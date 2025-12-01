@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
+import 'package:fvp/fvp.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:desktop_media_player_app/src/screens/home_screen.dart';
 import 'package:desktop_media_player_app/src/controllers/theme_controller.dart';
@@ -7,7 +7,7 @@ import 'package:desktop_media_player_app/src/services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
+  registerWith();
   await windowManager.ensureInitialized();
 
   WindowOptions windowOptions = const WindowOptions(
