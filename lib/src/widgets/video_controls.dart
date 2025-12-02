@@ -157,6 +157,7 @@ class VideoControlsState extends State<VideoControls> {
                         // Progress Bar
                         StreamBuilder<Duration>(
                           stream: widget.player.stream.position,
+                          initialData: widget.player.state.position,
                           builder: (context, snapshot) {
                             final position = snapshot.data ?? Duration.zero;
                             final duration = widget.player.state.duration;
