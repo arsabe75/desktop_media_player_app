@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/video_player_providers.dart';
+import 'custom_track_shape.dart';
 
 /// Volume control widget with mute button and slider
 class PlayerVolumeControl extends ConsumerStatefulWidget {
@@ -58,6 +59,7 @@ class _PlayerVolumeControlState extends ConsumerState<PlayerVolumeControl> {
               inactiveTrackColor: Colors.white24,
               thumbColor: Colors.white,
               overlayColor: Colors.white.withValues(alpha: 0.3),
+              trackShape: CustomTrackShape(),
             ),
             child: Slider(
               value: volume,

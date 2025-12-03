@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/video_player_providers.dart';
+import 'custom_track_shape.dart';
 
 /// Progress bar widget showing current position and allowing seeks
 class PlayerProgressBar extends ConsumerWidget {
@@ -29,7 +31,11 @@ class PlayerProgressBar extends ConsumerWidget {
         children: [
           Text(
             _formatDuration(position),
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -44,6 +50,7 @@ class PlayerProgressBar extends ConsumerWidget {
                 overlayColor: Theme.of(
                   context,
                 ).primaryColor.withValues(alpha: 0.3),
+                trackShape: CustomTrackShape(),
               ),
               child: Slider(
                 value: position.inMilliseconds.toDouble().clamp(
@@ -68,7 +75,11 @@ class PlayerProgressBar extends ConsumerWidget {
           const SizedBox(width: 12),
           Text(
             _formatDuration(duration),
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           ),
         ],
       ),

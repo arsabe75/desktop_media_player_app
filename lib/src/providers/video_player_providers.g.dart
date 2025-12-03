@@ -112,7 +112,7 @@ final class VideoPositionProvider
   }
 }
 
-String _$videoPositionHash() => r'2e4b69d4e118bd23100c9f50cdc708d31876e81d';
+String _$videoPositionHash() => r'6508bdc8bc6ea7238992b3a81cf958e251551017';
 
 /// Provides the video duration
 
@@ -195,7 +195,7 @@ final class VideoVolumeProvider extends $NotifierProvider<VideoVolume, double> {
   }
 }
 
-String _$videoVolumeHash() => r'df6fff0e049336c0b7cf8cd1c3b0eb6a6f415c00';
+String _$videoVolumeHash() => r'8835be5113e76a2124f82dd307298d82bbbdc353';
 
 /// Provides the current volume level (0.0 - 1.0)
 

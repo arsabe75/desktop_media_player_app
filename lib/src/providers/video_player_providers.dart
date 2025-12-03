@@ -32,8 +32,8 @@ Stream<Duration> videoPosition(Ref ref) async* {
   // Initial value
   yield controller.value.position;
 
-  // Stream position updates every 200ms
-  await for (final _ in Stream.periodic(const Duration(milliseconds: 200))) {
+  // Stream position updates every 50ms for smoother UI
+  await for (final _ in Stream.periodic(const Duration(milliseconds: 50))) {
     if (controller.value.isInitialized) {
       yield controller.value.position;
     }
@@ -66,8 +66,11 @@ class VideoVolume extends _$VideoVolume {
     // Listen to controller updates
     void listener() {
       final newVolume = controller.value.volume;
-      if (newVolume != state) {
-        state = newVolume;
+      // Use a small tolerance to avoid floating point jitter
+      if ((newVolume - state).abs() > 0.001) {
+        scheduleMicrotask(() {
+          state = newVolume;
+        });
       }
     }
 
@@ -99,7 +102,9 @@ class IsPlaying extends _$IsPlaying {
     void listener() {
       final isPlaying = controller.value.isPlaying;
       if (isPlaying != state) {
-        state = isPlaying;
+        scheduleMicrotask(() {
+          state = isPlaying;
+        });
       }
     }
 
