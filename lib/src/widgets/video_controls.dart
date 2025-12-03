@@ -29,6 +29,11 @@ class VideoControlsState extends State<VideoControls> {
   late StreamController<double> _volumeController;
   late StreamController<bool> _playingController;
 
+  // Cache last emitted values to prevent duplicates
+  Duration _lastPosition = Duration.zero;
+  double _lastVolumeValue = 1.0;
+  bool _lastPlayingValue = false;
+
   late VoidCallback _listener;
 
   @override
@@ -42,20 +47,34 @@ class VideoControlsState extends State<VideoControls> {
 
     // Seed streams with initial values to prevent initial flicker
     final initialValue = widget.controller.value;
-    _positionController.add(initialValue.position);
-    _volumeController.add(initialValue.volume);
-    _playingController.add(initialValue.isPlaying);
+    _lastPosition = initialValue.position;
+    _lastVolumeValue = initialValue.volume;
+    _lastPlayingValue = initialValue.isPlaying;
+    _positionController.add(_lastPosition);
+    _volumeController.add(_lastVolumeValue);
+    _playingController.add(_lastPlayingValue);
 
     // Listener that feeds the streams (throttled to prevent excessive updates)
     Timer? updateTimer;
     _listener = () {
       if (updateTimer?.isActive ?? false) return;
-      updateTimer = Timer(const Duration(milliseconds: 150), () {
+      updateTimer = Timer(const Duration(milliseconds: 200), () {
         if (mounted && !_isDragging) {
           final value = widget.controller.value;
-          _positionController.add(value.position);
-          _volumeController.add(value.volume);
-          _playingController.add(value.isPlaying);
+
+          // Only emit if values have changed to prevent unnecessary rebuilds
+          if (value.position != _lastPosition) {
+            _lastPosition = value.position;
+            _positionController.add(_lastPosition);
+          }
+          if (value.volume != _lastVolumeValue) {
+            _lastVolumeValue = value.volume;
+            _volumeController.add(_lastVolumeValue);
+          }
+          if (value.isPlaying != _lastPlayingValue) {
+            _lastPlayingValue = value.isPlaying;
+            _playingController.add(_lastPlayingValue);
+          }
         }
       });
     };
@@ -119,74 +138,73 @@ class VideoControlsState extends State<VideoControls> {
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: MouseRegion(
-        key: ValueKey(_visible),
-        cursor: _visible ? SystemMouseCursors.basic : SystemMouseCursors.none,
-        onHover: (_) => _onHover(),
-        child: Stack(
-          children: [
-            // Invisible container to catch hover events across the entire screen
-            GestureDetector(
-              onTap: () {
-                widget.controller.value.isPlaying
-                    ? widget.controller.pause()
-                    : widget.controller.play();
-                _startHideTimer();
-              },
-              onDoubleTap: () async {
-                bool isFullScreen = await windowManager.isFullScreen();
-                if (isFullScreen) {
-                  windowManager.setFullScreen(false);
-                } else {
-                  windowManager.setFullScreen(true);
-                }
-                _startHideTimer();
-              },
-              child: Container(color: Colors.transparent),
-            ),
+    return MouseRegion(
+      cursor: _visible ? SystemMouseCursors.basic : SystemMouseCursors.none,
+      onHover: (_) => _onHover(),
+      child: Stack(
+        children: [
+          // Invisible container to catch hover events across the entire screen
+          GestureDetector(
+            onTap: () {
+              widget.controller.value.isPlaying
+                  ? widget.controller.pause()
+                  : widget.controller.play();
+              _startHideTimer();
+            },
+            onDoubleTap: () async {
+              bool isFullScreen = await windowManager.isFullScreen();
+              if (isFullScreen) {
+                windowManager.setFullScreen(false);
+              } else {
+                windowManager.setFullScreen(true);
+              }
+              _startHideTimer();
+            },
+            child: Container(color: Colors.transparent),
+          ),
 
-            // Top Bar (Back button + Title)
-            IgnorePointer(
-              ignoring: !_visible,
-              child: AnimatedOpacity(
-                opacity: _visible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Container(
-                    color: Colors.black54,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      children: [
-                        const BackButton(color: Colors.white),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+          // Top Bar (Back button + Title)
+          IgnorePointer(
+            ignoring: !_visible,
+            child: AnimatedOpacity(
+              opacity: _visible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  color: Colors.black54,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      const BackButton(color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
+          ),
 
-            // Controls Overlay
-            IgnorePointer(
-              ignoring: !_visible,
-              child: AnimatedOpacity(
-                opacity: _visible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
+          // Controls Overlay
+          IgnorePointer(
+            ignoring: !_visible,
+            child: AnimatedOpacity(
+              opacity: _visible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: RepaintBoundary(
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(
@@ -346,8 +364,8 @@ class VideoControlsState extends State<VideoControls> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
