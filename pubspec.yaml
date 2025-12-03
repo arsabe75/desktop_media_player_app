@@ -40,6 +40,10 @@ dependencies:
   path: ^1.9.1
   window_manager: ^0.5.1
   shared_preferences: ^2.3.2
+  
+  # State management with code generation
+  flutter_riverpod: ^3.0.3
+  riverpod_annotation: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -51,6 +55,11 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  
+  # Riverpod code generation
+  build_runner: ^2.4.13
+  riverpod_generator: ^3.0.0
+  riverpod_lint: ^3.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

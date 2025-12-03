@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fvp/fvp.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:desktop_media_player_app/src/screens/home_screen.dart';
@@ -26,7 +27,7 @@ void main() async {
   });
 
   final themeController = ThemeController(ThemeService());
-  runApp(MyApp(themeController: themeController));
+  runApp(ProviderScope(child: MyApp(themeController: themeController)));
 }
 
 class MyApp extends StatelessWidget {

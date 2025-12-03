@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:video_player/video_player.dart';
 import 'package:desktop_media_player_app/src/models/video_source.dart';
-import 'package:path/path.dart' as p;
-import 'package:desktop_media_player_app/src/widgets/video_controls.dart';
-
+import 'package:desktop_media_player_app/src/widgets/separated_controls_bar.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:desktop_media_player_app/src/services/playback_service.dart';
+import 'package:desktop_media_player_app/src/providers/video_player_providers.dart';
 
-class PlayerScreen extends StatefulWidget {
+class PlayerScreen extends ConsumerStatefulWidget {
   final VideoSource videoSource;
 
   const PlayerScreen({super.key, required this.videoSource});
 
   @override
-  State<PlayerScreen> createState() => _PlayerScreenState();
+  ConsumerState<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
+class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   VideoPlayerController? _controller;
   final _playbackService = PlaybackService();
-  final GlobalKey<VideoControlsState> _videoControlsKey =
-      GlobalKey<VideoControlsState>();
   String? _errorMessage;
 
   @override
@@ -37,6 +35,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
         File(widget.videoSource.pathOrUrl),
       );
       await _controller!.initialize();
+
+      // Set controller in provider
+      ref.read(videoControllerProvider.notifier).setController(_controller);
+
       await _loadSavedPosition();
       await _controller!.play();
       setState(() {});
@@ -55,46 +57,63 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void dispose() {
     _savePosition();
+    _controller?.pause(); // Ensure video stops playing
     windowManager.setFullScreen(false);
+    // Use a microtask to avoid modifying provider during build/dispose cycle if possible,
+    // though here it's likely safe.
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(videoControllerProvider.notifier).setController(null);
+      }
+    });
     _controller?.dispose();
     super.dispose();
   }
 
+  void _handleMouseMove() {
+    ref.read(controlsVisibilityProvider.notifier).show();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final controlsVisible = ref.watch(controlsVisibilityProvider);
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.space): () {
-          if (_controller != null) {
-            _controller!.value.isPlaying
-                ? _controller!.pause()
-                : _controller!.play();
-          }
-          _videoControlsKey.currentState?.flashControls();
+          ref.read(isPlayingProvider.notifier).togglePlayPause();
+          ref.read(controlsVisibilityProvider.notifier).flash();
         },
         const SingleActivator(LogicalKeyboardKey.keyF): () async {
-          final isFullScreen = await windowManager.isFullScreen();
-          windowManager.setFullScreen(!isFullScreen);
-          _videoControlsKey.currentState?.flashControls();
+          ref.read(isFullscreenProvider.notifier).toggle();
+          final newState = ref.read(isFullscreenProvider);
+          await windowManager.setFullScreen(newState);
+          ref.read(controlsVisibilityProvider.notifier).flash();
         },
         const SingleActivator(LogicalKeyboardKey.arrowRight): () {
           if (_controller != null) {
-            _controller!.seekTo(
-              _controller!.value.position + const Duration(seconds: 10),
-            );
+            final newPosition =
+                _controller!.value.position + const Duration(seconds: 10);
+            _controller!.seekTo(newPosition);
           }
-          _videoControlsKey.currentState?.flashControls();
+          ref.read(controlsVisibilityProvider.notifier).flash();
         },
         const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
           if (_controller != null) {
-            _controller!.seekTo(
-              _controller!.value.position - const Duration(seconds: 10),
-            );
+            final newPosition =
+                _controller!.value.position - const Duration(seconds: 10);
+            _controller!.seekTo(newPosition);
           }
-          _videoControlsKey.currentState?.flashControls();
+          ref.read(controlsVisibilityProvider.notifier).flash();
         },
         const SingleActivator(LogicalKeyboardKey.keyM): () {
-          _videoControlsKey.currentState?.toggleMute();
+          final currentVolume = ref.read(videoVolumeProvider);
+          if (currentVolume > 0) {
+            ref.read(videoVolumeProvider.notifier).setVolume(0);
+          } else {
+            ref.read(videoVolumeProvider.notifier).setVolume(1.0);
+          }
+          ref.read(controlsVisibilityProvider.notifier).flash();
         },
       },
       child: Focus(
@@ -102,7 +121,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
         child: Scaffold(
           backgroundColor: Colors.black,
           appBar: null,
-          extendBodyBehindAppBar: true,
           body: _errorMessage != null
               ? Center(
                   child: Column(
@@ -122,25 +140,74 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ],
                   ),
                 )
-              : Stack(
-                  children: [
-                    Center(
-                      child:
-                          _controller != null &&
-                              _controller!.value.isInitialized
-                          ? AspectRatio(
-                              aspectRatio: _controller!.value.aspectRatio,
-                              child: VideoPlayer(_controller!),
-                            )
-                          : const CircularProgressIndicator(),
+              : MouseRegion(
+                  onHover: (_) => _handleMouseMove(),
+                  cursor: controlsVisible
+                      ? SystemMouseCursors.basic
+                      : SystemMouseCursors.none,
+                  child: GestureDetector(
+                    onTap: () {
+                      ref.read(isPlayingProvider.notifier).togglePlayPause();
+                      ref.read(controlsVisibilityProvider.notifier).flash();
+                    },
+                    onDoubleTap: () async {
+                      ref.read(isFullscreenProvider.notifier).toggle();
+                      final newState = ref.read(isFullscreenProvider);
+                      await windowManager.setFullScreen(newState);
+                      ref.read(controlsVisibilityProvider.notifier).flash();
+                    },
+                    child: Stack(
+                      children: [
+                        Column(
+                          children: [
+                            // Video player area
+                            Expanded(
+                              child: Center(
+                                child:
+                                    _controller != null &&
+                                        _controller!.value.isInitialized
+                                    ? AspectRatio(
+                                        aspectRatio:
+                                            _controller!.value.aspectRatio,
+                                        child: VideoPlayer(_controller!),
+                                      )
+                                    : const CircularProgressIndicator(),
+                              ),
+                            ),
+
+                            // Separated controls bar
+                            if (_controller != null &&
+                                _controller!.value.isInitialized)
+                              SeparatedControlsBar(
+                                videoTitle: widget.videoSource.pathOrUrl,
+                              ),
+                          ],
+                        ),
+
+                        // Back button overlay (top-left)
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: AnimatedOpacity(
+                            opacity: controlsVisible ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 300),
+                            child: IgnorePointer(
+                              ignoring: !controlsVisible,
+                              child: SafeArea(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black45,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const BackButton(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    if (_controller != null && _controller!.value.isInitialized)
-                      VideoControls(
-                        key: _videoControlsKey,
-                        controller: _controller!,
-                        title: p.basename(widget.videoSource.pathOrUrl),
-                      ),
-                  ],
+                  ),
                 ),
         ),
       ),
